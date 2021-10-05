@@ -6,6 +6,7 @@
   "icon": "img/logo.png",
   "publisher": "APILinter",
   "license": "MIT",
+  "repository": "https://github.com/bluescreen10/vscode-apilinter",
   "engines": {
     "vscode": "^1.60.0"
   },
