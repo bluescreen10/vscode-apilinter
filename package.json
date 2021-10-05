@@ -4,6 +4,7 @@
   "description": "Run api-linter on .proto files",
   "version": "0.0.1",
   "icon": "img/logo.png",
+  "publisher": "APILinter",
   "license": "MIT",
   "engines": {
     "vscode": "^1.60.0"
