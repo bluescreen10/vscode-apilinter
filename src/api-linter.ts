@@ -1,6 +1,5 @@
-import * as vscode from 'vscode';
-import * as cp from 'child_process';
-import { MessageChannel } from 'worker_threads';
+import * as vscode from "vscode";
+import * as cp from "child_process";
 
 type Output = {
   file_path: string;
@@ -24,47 +23,104 @@ type Position = {
   column_number: number;
 };
 
-export function lint(
-  file: string,
-  configFile: string | undefined,
-  channel: vscode.OutputChannel
-): vscode.Diagnostic[] {
-  const args = [file, '--output-format', 'json'];
-
-  if (configFile) {
-    args.push('--config', configFile);
-  }
-
-  const result = cp.spawnSync('api-linter', args);
-  if (result.status !== 0) {
-    channel.appendLine(result.stderr);
-    vscode.window.showErrorMessage('Error running api-linter');
-    return [];
-  }
-
-  const output: Output[] = JSON.parse(result.stdout);
-  if (output.length !== 1) {
-    return [];
-  }
-
-  return output[0].problems.map((p) => {
-    const problem = new vscode.Diagnostic(
-      toRange(p.location),
-      p.message,
-      vscode.DiagnosticSeverity.Warning
-    );
-    problem.code = {
-      target: vscode.Uri.parse(p.rule_doc_uri),
-      value: p.rule_id,
-    };
-
-    return problem;
-  });
+export interface APILinterOptions {
+  channel: vscode.OutputChannel;
 }
 
-export function isInstalled(): boolean {
-  const result = cp.spawnSync('api-linter', ['-h']);
-  return result.status === 2;
+export class APILinter {
+  #channel: vscode.OutputChannel;
+  #configFile?: string;
+  #protoPaths: string[] = [];
+  #command: string[] = ["api-linter"];
+
+  #isInstalled = false;
+  #isInstallationChecked = false;
+
+  #args: string[] = [];
+
+  constructor(channel: vscode.OutputChannel) {
+    this.#channel = channel;
+  }
+
+  setCommand(command: string[]) {
+    if (command.join(" ") === this.#command.join(" ")) {
+      return;
+    }
+    this.#command = command;
+    this.#isInstallationChecked = false;
+  }
+
+  setConfigFile(configFile?: string) {
+    if (configFile === this.#configFile) {
+      return;
+    }
+    this.#configFile = configFile;
+    this.#updateArguments();
+  }
+
+  setProtoPaths(protoPaths: string[]) {
+    if (protoPaths.join(",") === this.#protoPaths.join(",")) {
+      return;
+    }
+    this.#protoPaths = protoPaths;
+    this.#updateArguments();
+  }
+
+  isInstalled(): boolean {
+    if (this.#isInstallationChecked) {
+      return this.#isInstalled;
+    }
+    this.#isInstallationChecked = true;
+    const result = cp.spawnSync(this.#command[0], [
+      ...this.#command.slice(1),
+      "-h",
+    ]);
+    return (this.#isInstalled = result.status === 2);
+  }
+
+  lint(file: string): vscode.Diagnostic[] {
+    const result = cp.spawnSync(
+      this.#command[0],
+      [...this.#command.slice(1), file, ...this.#args],
+      { encoding: "utf-8" }
+    );
+    if (result.status !== 0) {
+      this.#channel.appendLine(result.stderr);
+      vscode.window.showErrorMessage(
+        `Error running ${JSON.stringify(this.#command.join(" "))}`
+      );
+      return [];
+    }
+
+    const output: Output[] = JSON.parse(result.stdout);
+    if (output.length !== 1) {
+      return [];
+    }
+
+    return output[0].problems.map((p) => {
+      const problem = new vscode.Diagnostic(
+        toRange(p.location),
+        p.message,
+        vscode.DiagnosticSeverity.Warning
+      );
+      problem.code = {
+        target: vscode.Uri.parse(p.rule_doc_uri),
+        value: p.rule_id,
+      };
+
+      return problem;
+    });
+  }
+
+  #updateArguments() {
+    this.#args = ["--output-format", "json"];
+    if (this.#configFile) {
+      this.#args.push("--config", this.#configFile);
+    }
+    for (const path of this.#protoPaths) {
+      this.#args.push("-I", path);
+    }
+  }
 }
 
 function toRange(location: Location): vscode.Range {

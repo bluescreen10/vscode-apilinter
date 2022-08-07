@@ -24,10 +24,22 @@
       "type": "object",
       "title": "API Linter",
       "properties": {
-        "apiLinter.configDir": {
+        "apiLinter.command": {
+          "type": "array",
+          "default": [
+            "api-linter"
+          ],
+          "description": "Command to run for API linter."
+        },
+        "apiLinter.configFile": {
           "type": "string",
-          "default": "",
-          "description": "The directory where to find the .apilinter.yml file"
+          "default": ".apilinter.yml",
+          "description": "Path to a config file for API linter. If the file does not exist, a config will not be used."
+        },
+        "apiLinter.protoPaths": {
+          "type": "array",
+          "default": [],
+          "description": "Include paths to use for proto imports."
         }
       }
     },
@@ -47,16 +59,16 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/glob": "^7.1.4",
-    "@types/mocha": "^9.0.0",
-    "@types/node": "14.x",
-    "@types/vscode": "^1.60.0",
-    "@typescript-eslint/eslint-plugin": "^4.31.1",
-    "@typescript-eslint/parser": "^4.31.1",
-    "@vscode/test-electron": "^1.6.2",
-    "eslint": "^7.32.0",
-    "glob": "^7.1.7",
-    "mocha": "^9.1.1",
-    "typescript": "^4.4.3"
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.69.1",
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "@vscode/test-electron": "^2.1.5",
+    "eslint": "^8.21.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.0.0",
+    "typescript": "^4.7.4"
   }
 }
